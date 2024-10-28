@@ -1,0 +1,29 @@
+sprite Cat.
+
+set x = 0.
+set y = 0.
+
+var foo = 0.
+
+list bar = [].
+
+costume "cat_walking".
+costume "cat_flying".
+
+#[x = 12; y = 100]
+block set variable [foo] to 1.
+
+block when flag clicked {
+    set x to 100.
+    set y to 100.
+    repeat 20 times {
+        turn left 15 degrees.
+        change [Warp] effect by 10.
+    }.
+    wait (foo) seconds.
+    repeat 20 times {
+       turn right 15 degrees.
+       change [Warp] effect by 10.
+    }.
+    say "Woah!" for 5 seconds.
+}.

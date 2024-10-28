@@ -1,0 +1,15 @@
+sprite Other.
+
+set x = -48.
+set y = -3.
+set size = 100.
+set direction = 90.
+set layerOrder = 2.
+
+costume "amon".
+
+block when flag clicked {
+    repeat until (key (username) pressed?) {
+        stop [this script].
+    }.
+}.

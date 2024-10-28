@@ -1,0 +1,11 @@
+stage.
+
+set currentCostume = 1.
+set videoTransparency = 60.
+
+sound "Pop".
+
+var my variable = 0.
+
+costume "backdrop1".
+costume "Baseball 1".

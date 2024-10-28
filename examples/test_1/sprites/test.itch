@@ -1,0 +1,52 @@
+sprite Test.
+
+set x = 188.
+set y = 65.
+set size = 100.
+set direction = -75.
+set layerOrder = 1.
+
+costume "costume1".
+costume "costume2".
+
+sound "Meow".
+
+broadcast "message1".
+
+var foobar = 0.
+
+list baz = [].
+
+block when [a] key pressed {
+    point towards [mouse-pointer].
+    change [pitch] sound effect by 10.
+    turn right 15 degrees.
+    if (([abs] of (pick random 1 to 10)) > 5) then {
+        ask "What's your name?" and wait.
+        create clone of [myself].
+    } else {
+        add "thing" to [baz].
+        broadcast [message1].
+        set drag mode [draggable].
+        say (baz) for 2 seconds.
+        reset timer.
+        stop [all].
+    }.
+    if (key [space] pressed?) then {
+        start sound [Meow].
+        go [forward] 1 layers.
+        change [color] effect by 25.
+        switch backdrop to [backdrop1].
+        switch costume to [costume2].
+        set rotation style [left-right].
+        glide 1 secs to [random position].
+    }.
+    delete (pick random 1 to (length of list [baz])) of [baz].
+}.
+
+
+block when flag clicked {
+    set [foobar] to (5).
+    switch costume to [costume1].
+    set rotation style [all-around].
+}
