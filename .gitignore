@@ -6,3 +6,4 @@ out
 project.sb3
 original.json
 roundTrip.json
+bin/itch.exe
