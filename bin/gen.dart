@@ -4,6 +4,8 @@ import "./ast.dart" as ast;
 import "./scratch_format.dart" as scratch;
 import './standard_lib.dart' as std;
 
+import "./log_level.dart";
+
 import './decoders/decoders.dart' as decoders;
 
 class _TargetSettings {
@@ -94,7 +96,7 @@ class _TargetSettings {
   }
 }
 
-class Generator {
+class Generator with Logger {
   final List<String> errors = [];
   final List<({String from, String to})> assetMoves = [];
   // The key is opcode, the value is the number of times used
@@ -232,7 +234,7 @@ class Generator {
       return false;
     }
 
-    (scratch.Input, scratch.Block?)? _wrapShadowInput(
+    (scratch.Input, scratch.Block?)? wrapShadowInput(
         scratch.ReporterBlock block) {
       return (
         scratch.BlockInput(kind: scratch.InputKind.shadow, block: block),
@@ -315,7 +317,7 @@ class Generator {
           case "INDEX":
             break;
           case "ITEM":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "KEY_OPTION":
             break;
           case "LETTER":
@@ -325,7 +327,7 @@ class Generator {
           case "MESSAGE":
             break;
           case "NUM":
-            return _wrapShadowInput(scratch.ReporterBlock.integer(value));
+            return wrapShadowInput(scratch.ReporterBlock.integer(value));
           case "NUM1":
             break;
           case "NUM2":
@@ -339,13 +341,13 @@ class Generator {
           case "OPERAND1":
             break;
           case "OPERAND2":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "OPERATOR":
             break;
           case "PROPERTY":
             break;
           case "QUESTION":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "SECS":
             return (
               scratch.BlockInput(
@@ -364,11 +366,11 @@ class Generator {
           case "STRETCH":
             break;
           case "STRING":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "STRING1":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "STRING2":
-            return _wrapShadowInput(scratch.ReporterBlock.string(value));
+            return wrapShadowInput(scratch.ReporterBlock.string(value));
           case "STYLE":
             break;
           case "SUBSTACK":
@@ -412,7 +414,7 @@ class Generator {
 
     for (final seg in block.segments) {
       if (slotsCovered - 1 > slots.length) {
-        print(
+        debug(
             "We are trying to cover $slotsCovered slots, but only have ${slots.length}.\nslots: $slots\nsegments: ${block.segments}");
         break;
       }
@@ -426,7 +428,7 @@ class Generator {
                   break;
                 }
                 if (!validValueForMenu(info.$1, name, value)) {
-                  print("ERROR: '$value' is not a valid menu option for $name");
+                  debug("ERROR: '$value' is not a valid menu option for $name");
                 }
                 generateMenu(blocks, name, value, info, owningBlockId);
                 inputs[name] = scratch.IdInput(
@@ -442,19 +444,19 @@ class Generator {
               }
               break;
             case std.FieldDef _:
-              print(
+              debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.VarDef _:
-              print(
+              debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.VarGetterDef _:
-              print(
+              debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.MouthDef _:
-              print(
+              debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
           }
@@ -469,7 +471,7 @@ class Generator {
                 }
                 String? actualValue = valueForMenuLabel(info.$1, name, value);
                 if (actualValue == null) {
-                  print("ERROR: '$value' is not a valid menu option for $name");
+                  debug("ERROR: '$value' is not a valid menu option for $name");
                 }
                 generateMenu(
                     blocks, name, actualValue ?? value, info, owningBlockId);
@@ -508,11 +510,11 @@ class Generator {
                           : broadcastId(value));
               break;
             case std.VarGetterDef _:
-              print(
+              debug(
                   "FIELD Segment is $seg\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.MouthDef _:
-              print(
+              debug(
                   "FIELD Segment is $seg\t\tSlot is ${slots[slotsCovered].name}");
               break;
           }
@@ -529,15 +531,15 @@ class Generator {
                     scratch.IdInput(id: id, kind: scratch.InputKind.shadow);
                 break;
               case std.FieldDef _:
-                print(
+                debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.VarDef _:
-                print(
+                debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.VarGetterDef _:
-                print(
+                debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\t${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.MouthDef _:
@@ -577,7 +579,7 @@ class Generator {
                     shadowValue: scratch.ReporterBlock.string(""));
                 break;
               default:
-                print("Reporter going into non-input");
+                debug("Reporter going into non-input");
                 break;
             }
           }
@@ -607,19 +609,19 @@ class Generator {
           }
           switch (slots[slotsCovered]) {
             case std.InputDef(name: String _):
-              print(
+              debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.FieldDef _:
-              print(
+              debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.VarDef _:
-              print(
+              debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.VarGetterDef _:
-              print(
+              debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.MouthDef(name: String name):
@@ -662,7 +664,7 @@ class Generator {
     }
     int total = slotsCovered + words;
     if (total != block.segments.length && !hat) {
-      print("Only processed $total segments: $owningBlockId");
+      debug("Only processed $total segments: $owningBlockId");
     }
     return (inputs: inputs, fields: fields, blocks: blocks, next: next);
   }
@@ -677,7 +679,7 @@ class Generator {
   (std.ScratchBlockDef, String)? menuInstanceInfo(String menu) {
     final def = std.menus["[$menu]"];
     if (def == null) {
-      print("NO menu def for: $menu");
+      debug("NO menu def for: $menu");
       return null;
     }
     final curr = blockIds[def.opcode];
@@ -694,7 +696,7 @@ class Generator {
     final op = block.op();
     final def = std.blockDefs[op];
     if (def == null) {
-      print("NO block def for: $op");
+      debug("NO block def for: $op");
       return null;
     }
     final curr = blockIds[def.opcode];
@@ -764,7 +766,7 @@ class Generator {
       final uri = "$projectPath/assets/sounds/${decl.assetName}";
       final soundInfo = decoders.decodeSound(uri);
       if (soundInfo == null) {
-        print("Could not find a sound for '${decl.assetName}'.");
+        debug("Could not find a sound for '${decl.assetName}'.");
         return null;
       }
       assetMoves.add((
@@ -784,7 +786,7 @@ class Generator {
     final uri = "$projectPath/assets/images/${decl.assetName}";
     final imageInfo = decoders.decodeImage(uri);
     if (imageInfo == null) {
-      print("Could not find an image for '${decl.assetName}'.");
+      debug("Could not find an image for '${decl.assetName}'.");
       return null;
     }
     assetMoves.add((
@@ -874,7 +876,7 @@ class Generator {
             addListToTarget(d.name);
             lists[listId(d.name)] = l;
           } else {
-            print("Generation error: could not generate list variable for $d");
+            debug("Generation error: could not generate list variable for $d");
             return null;
           }
           break;
@@ -884,7 +886,7 @@ class Generator {
             addVarToTarget(d.name);
             vars[varId(d.name)] = v;
           } else {
-            print("Generation error: could not generate variable for $d");
+            debug("Generation error: could not generate variable for $d");
             return null;
           }
           break;
@@ -898,7 +900,7 @@ class Generator {
         case ast.DAsset d:
           final asset = genAsset(d);
           if (asset == null) {
-            print("Generation error: could not generate costume for $d");
+            debug("Generation error: could not generate costume for $d");
             return null;
           } else if (d.isSound) {
             sounds.add(asset);

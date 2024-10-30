@@ -1,6 +1,7 @@
 import "dart:math";
 
 import "ast.dart";
+import "log_level.dart";
 
 class ParserError extends Error {
   final int offset;
@@ -99,56 +100,17 @@ class Input {
   }
 }
 
-enum LogLevel {
-  quiet,
-  debug,
-  info,
-  warn,
-  error,
-  fatal;
-
-  bool operator >(LogLevel b) {
-    return index > b.index;
-  }
-}
-
-class Parser {
+class Parser with Logger {
   final String fileName;
   final Input input;
   final List<ParserError> _errors;
   String? freeComment;
   final Map<String, Comment> comments;
-  LogLevel logLevel;
 
   Parser({required String contents, required this.fileName})
       : input = Input(contents),
         _errors = [],
-        comments = {},
-        logLevel = LogLevel.quiet;
-
-  void logQuiet() {
-    logLevel = LogLevel.quiet;
-  }
-
-  void logDebug() {
-    logLevel = LogLevel.debug;
-  }
-
-  void logInfo() {
-    logLevel = LogLevel.info;
-  }
-
-  void logWarn() {
-    logLevel = LogLevel.warn;
-  }
-
-  void logError() {
-    logLevel = LogLevel.error;
-  }
-
-  void logFatal() {
-    logLevel = LogLevel.fatal;
-  }
+        comments = {};
 
   void addComment(String comment) {
     freeComment = freeComment != null ? "$freeComment\n$comment" : comment;
@@ -427,7 +389,7 @@ class Parser {
         input.regressTo(offset);
         final value = parseStaticValue();
         if (value == null) {
-          addError("a valid value", "${input.apply(1)}");
+          addError("a valid value", input.apply(1));
           input.regressTo(offset);
           return null;
         }
@@ -475,12 +437,6 @@ class Parser {
         c == '7' ||
         c == '8' ||
         c == '9';
-  }
-
-  void debug(String message) {
-    if (logLevel > LogLevel.quiet) {
-      print(message);
-    }
   }
 
   Decl? parseDecl() {
