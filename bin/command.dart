@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:args/args.dart';
 
 import 'a_command.dart';
 import 'compare.dart';
 import 'compile.dart';
+import 'init.dart';
 
 const String cHelp = 'help';
 const String cVersion = 'version';
 const String cCompile = 'compile';
 const String cCompare = 'compare';
+const String cInit = 'init';
 
 ArgParser _buildParser() {
   return ArgParser()
@@ -38,6 +42,22 @@ ArgParser _buildParser() {
           abbr: 'd',
           mandatory: true,
           help: 'The path to a itch project',
+        ),
+    )
+    ..addCommand(
+      cInit,
+      ArgParser(allowTrailingOptions: true)
+        ..addOption(
+          'dir',
+          abbr: 'd',
+          mandatory: true,
+          help: 'The path to a itch project',
+        )
+        ..addOption(
+          'name',
+          abbr: 'n',
+          mandatory: true,
+          help: 'The name of your project',
         ),
     );
 }
@@ -87,21 +107,28 @@ Map<String, String> commandUsage = {
   cHelp: "Show this help",
   cVersion: "Print the current version of the itch executable",
   cCompile: "Compile a project.  Must supply a path to an itch project",
+  cInit: "Start a new project in a new directory with a given name",
 };
 
 ACommand getCommand(Iterable<String> args, String currentVersion) {
   final p = _buildParser();
   final result = p.parse(args);
-  print("Rest:\t${result.rest}");
   switch (result.command?.name) {
     case cVersion:
       return VersionCommand(version: currentVersion);
     case cCompile:
       final logLevel = result.command!.option("logLevel");
       return CompileCommand(
-          dir: result.command!.option('dir')!, logLevel: logLevel ?? "");
+        dir: result.command!.option('dir') ?? Directory('.').path,
+        logLevel: logLevel ?? "",
+      );
     case cCompare:
       return CompareCommand(dir: result.command!.option('dir')!);
+    case cInit:
+      return InitCommand(
+        projectName: result.command!.option('name')!,
+        dir: result.command!.option('dir')!,
+      );
     default:
       return HelpCommand(parser: p, commandUsage: commandUsage);
   }

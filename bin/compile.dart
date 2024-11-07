@@ -6,12 +6,39 @@ import 'ast.dart';
 import 'standard_lib.dart';
 import 'gen.dart' as gen;
 import "a_command.dart";
+import 'log_level.dart';
 
-class CompileCommand implements ACommand {
+extension WhitespaceChecked on String {
+  bool isWhitespace() {
+    for (final c in runes) {
+      switch (c) {
+        case 9:
+          break;
+        case 10:
+          break;
+        case 11:
+          break;
+        case 12:
+          break;
+        case 13:
+          break;
+        case 32:
+          break;
+        default:
+          return false;
+      }
+    }
+    return true;
+  }
+}
+
+class CompileCommand extends Logger implements ACommand {
   String dir;
   String logLevel;
 
-  CompileCommand({required this.dir, required this.logLevel});
+  CompileCommand({required this.dir, required this.logLevel}) {
+    super.setLogLevel('info');
+  }
 
   @override
   Future<bool> exec() async {
@@ -48,11 +75,58 @@ class CompileCommand implements ACommand {
     }
   }
 
+  Future<String?> getProjectName() async {
+    final projectFile = File.fromUri(Uri.file("$dir/project.itch"));
+    if (!await projectFile.exists()) {
+      warn("No project file found at: ${projectFile.path}");
+      return null;
+    }
+    final contents = await projectFile.readAsString();
+    for (final line in contents.split('\n')) {
+      if (line.startsWith("project")) {
+        final matches =
+            RegExp(r"project ([a-zA-Z0-9'_-\s]+).").matchAsPrefix(line);
+        if (matches == null) {
+          error("""
+Invalid project file:
+
+Expected something like
+
+project My Project.
+
+Instead, I see
+
+$line"""
+              .trimLeft());
+          return null;
+        }
+        if (matches.groups([1]) case [String name, ...]) {
+          return name;
+        }
+      }
+      if (line.startsWith("#") || line.isWhitespace()) {
+        continue;
+      }
+      error("""
+Unexpected content in project file:
+
+Got
+
+$line
+
+But I don't know what that is...."""
+          .trimLeft());
+    }
+    info("Never found a valid project file or name, defaulting to 'Project'");
+    return null;
+  }
+
   Future<void> runCompile(String path) async {
     await loadBlockDefs();
     final entries = await Directory(path)
         .list(recursive: true)
-        .where((e) => e.path.endsWith(".itch"))
+        .where(
+            (e) => e.path.endsWith(".itch") && !e.path.endsWith("project.itch"))
         .toList();
     final files = <String, ItchFile>{};
     bool error = false;
@@ -82,6 +156,9 @@ class CompileCommand implements ACommand {
     print("Compilation successful. Assembling project");
     print("Writing program data");
     final projectJson = File.fromUri(Uri.file('./out/project.json'));
+    if (!await projectJson.exists()) {
+      await projectJson.create(recursive: true);
+    }
     final encoder = JsonEncoder.withIndent("  ");
     projectJson.writeAsString(encoder.convert(project.toJson()));
     print("Moving assets...");
@@ -90,11 +167,13 @@ class CompileCommand implements ACommand {
       final dest = File.fromUri(Uri.file("./out/${move.to}"));
       await dest.writeAsBytes(await src.readAsBytes());
     }
+    // Get project name
+    final projectName = await getProjectName() ?? 'Project';
     // clean old resources
     print("Cleaning up");
     try {
       await File.fromUri(Uri.file("out.zip")).delete();
-      await File.fromUri(Uri.file("project.sb3")).delete();
+      await File.fromUri(Uri.file("$projectName.sb3")).delete();
     } on PathNotFoundException catch (_) {
       // Not handling
     }
@@ -107,13 +186,13 @@ class CompileCommand implements ACommand {
       return;
     }
     // move zip to sb3
-    final p2 = await Process.run("mv", ["out.zip", "project.sb3"]);
+    final p2 = await Process.run("mv", ["out.zip", "$projectName.sb3"]);
     if (p2.exitCode != 0) {
       print("Could not create project file");
       print(p.stdout);
       return;
     }
-    print("Project file created: project.sb3");
+    print("Project file created: $projectName.sb3");
     return;
   }
 }

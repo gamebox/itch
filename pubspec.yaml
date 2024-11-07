@@ -8,6 +8,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  ansicolor: ^2.0.3
   args: ^2.4.2
   crypto: ^3.0.6
   matcher: ^0.12.16+1

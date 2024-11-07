@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'data/data.dart';
+
 class ScratchBlockDef {
   final String opcode;
   final String identifier;
@@ -244,9 +246,7 @@ Future<void> loadBlockDefs() async {
     print("Block defs already loaded");
     return;
   }
-  final f = File.fromUri(Uri.file("./data/blocks.json"));
-  final blocksJson = jsonDecode(await f.readAsString());
-  if (blocksJson case List<dynamic> json) {
+  if (blockData case List<dynamic> json) {
     print("Loading ${json.length} block definitions");
     for (final b in json) {
       final block = ScratchBlockDef.fromJson(b);

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import './ansi.dart';
+
 enum _LogLevel {
   debug,
   info,
@@ -66,19 +68,19 @@ mixin class Logger {
 
   void warn(String message) {
     if (_logLevel <= _LogLevel.warn) {
-      _print(message);
+      _print(warnPen(message));
     }
   }
 
   void error(String message) {
     if (_logLevel <= _LogLevel.error) {
-      _print(message);
+      _print(errorPen(message));
     }
   }
 
   void fatal(String message) {
     if (_logLevel <= _LogLevel.fatal) {
-      _print(message);
+      _print(errorPen(message));
     }
   }
 }

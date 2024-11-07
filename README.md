@@ -77,10 +77,12 @@ compile
 
 ## Roadmap
 
-1. Support for Windows / non-POSIX OS.
-2. Support for single sprites.
-3. Support for importing a Scratch project or sprite.
-4. Create a new project from a template.
-5. [Long Range] Create a new player/VM based on Dart/Flutter
-6. [Long Range] Create a run/play edit cycle with Dart/Flutter VM.
-7. [Long Range] Implement novel features in Dart/Flutter VM and language.
+- [ ] Support for Windows / non-POSIX OS.
+- [ ] Support for single sprites.
+- [ ] Support for importing a Scratch project or sprite.
+- [x] Create a new project from a template.
+- [ ] a tutorial feature baked into the tool
+- [ ] Language Server
+- [ ] [Long Range] Create a new player/VM based on Dart/Flutter
+- [ ] [Long Range] Create a run/play edit cycle with Dart/Flutter VM.
+- [ ] [Long Range] Implement novel features in Dart/Flutter VM and language.

@@ -1,3 +1,4 @@
+const menus = """
 {
   "CLONE_OPTION": [
     ["myself", "_myself_"]
@@ -86,3 +87,4 @@
     ["call a function", null]
   ]
 }
+""";

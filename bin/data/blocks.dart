@@ -1,3 +1,4 @@
+const blocks = """
 [
   {
     "opcode": "control_forever",
@@ -2610,3 +2611,4 @@
     "blockLabel": "volume"
   }
 ]
+""";
