@@ -100,14 +100,16 @@ class Input {
   }
 }
 
-class Parser with Logger {
+class Parser {
   final String fileName;
   final Input input;
   final List<ParserError> _errors;
   String? freeComment;
   final Map<String, Comment> comments;
+  final LoggerImpl logger;
 
-  Parser({required String contents, required this.fileName})
+  Parser(
+      {required String contents, required this.fileName, required this.logger})
       : input = Input(contents),
         _errors = [],
         comments = {};
@@ -302,25 +304,25 @@ class Parser with Logger {
   }
 
   List<Block> parseBlocks() {
-    debug("\n\nparseBlocks:");
+    logger.debug("\n\nparseBlocks:");
     List<Block> blocks = [];
     Block? block;
     do {
       block = parseBlock();
       if (block != null) {
-        debug("Adding block: $block");
+        logger.debug("Adding block: $block");
         blocks.add(block);
       }
       whitespace();
       newlines();
       whitespace();
     } while (block != null);
-    debug("parsed $blocks\n\n");
+    logger.debug("parsed $blocks\n\n");
     return blocks;
   }
 
   Segment? parseReporterSegment() {
-    debug("parsing reporter");
+    logger.debug("parsing reporter");
     whitespace();
     final block = parseBlock(end: ")");
     if (block == null) {
@@ -331,7 +333,7 @@ class Parser with Logger {
   }
 
   Segment? parseFieldSegment() {
-    debug("parsing field");
+    logger.debug("parsing field");
     whitespace();
     final value = anyUntilStr("]", false).trim();
     input.advance(1);
@@ -340,27 +342,27 @@ class Parser with Logger {
   }
 
   Segment? parseCMouthSegment() {
-    debug("parsing c mouth");
+    logger.debug("parsing c mouth");
     whitespace();
     newlines();
     final blocks = parseBlocks();
     newlines();
     whitespace();
     if (!_checkStr("}")) {
-      debug("no closing brace: '${input.context(5)}'");
+      logger.debug("no closing brace: '${input.context(5)}'");
       return null;
     }
     whitespace();
-    debug("parsed blocks: ${blocks.length} blocks");
+    logger.debug("parsed blocks: ${blocks.length} blocks");
     return SCMouth(blocks);
   }
 
   Segment? parseWordSegment() {
-    debug("parsing word");
+    logger.debug("parsing word");
     whitespace();
     final value = anyUntil(invalidValueChar, false).trim();
     whitespace();
-    debug("parsed word: '$value'");
+    logger.debug("parsed word: '$value'");
     if (value.isEmpty) {
       return null;
     }
@@ -368,10 +370,10 @@ class Parser with Logger {
   }
 
   Block? parseBlock({String end = "."}) {
-    debug("\nparseBlock\n----------------------------\n");
+    logger.debug("\nparseBlock\n----------------------------\n");
     final List<Segment> segments = [];
     while (true) {
-      debug("parsing segment");
+      logger.debug("parsing segment");
       if (input.isEOF()) {
         addError("block", "end of file");
         return null;
@@ -379,7 +381,7 @@ class Parser with Logger {
 
       if (_checkStr(end)) {
         final b = Block(segments);
-        debug("end: $b\n----------------------------\n");
+        logger.debug("end: $b\n----------------------------\n");
         return b;
       }
 
@@ -393,7 +395,10 @@ class Parser with Logger {
           input.regressTo(offset);
           return null;
         }
-        segments.add(SValue(value: value));
+        final seg = SValue(value: value);
+        logger.debug("Adding segment: $seg\n");
+        whitespace();
+        segments.add(seg);
         continue;
       }
       if (_checkStr("(")) {
@@ -407,11 +412,11 @@ class Parser with Logger {
       final seg = p();
 
       if (seg != null) {
-        debug("Adding segment: $seg\n");
+        logger.debug("Adding segment: $seg\n");
         whitespace();
         segments.add(seg);
       } else {
-        debug("No segment :-(");
+        logger.debug("No segment :-(");
         return null;
       }
     }
@@ -441,7 +446,7 @@ class Parser with Logger {
 
   Decl? parseDecl() {
     if (_checkStr("var ")) {
-      debug("Parsing var");
+      logger.debug("Parsing var");
       final name = anyUntilStr("=", false).trim();
       input.advance(1);
       whitespace();
@@ -460,7 +465,7 @@ class Parser with Logger {
       return DVar(name: name, value: value);
     }
     if (_checkStr("list ")) {
-      debug("Parsing list");
+      logger.debug("Parsing list");
       final name = anyUntilStr("=", false).trim();
       input.advance(1);
       whitespace();
@@ -480,7 +485,7 @@ class Parser with Logger {
       return DList(name: name, values: values);
     }
     if (_checkStr("set ")) {
-      debug("Parsing set");
+      logger.debug("Parsing set");
       int offset = input.offset();
       final name = anyUntilStr("=", false).trim();
       if (name == "") {
@@ -506,14 +511,14 @@ class Parser with Logger {
       return DSet(name: name, value: value);
     }
     if (_checkStr("#")) {
-      debug("Parsing comment");
+      logger.debug("Parsing comment");
       final content = anyUntilStr("\n", false).trim();
       addComment(content);
       newlines();
       return parseDecl();
     }
     if (_checkStr("broadcast ")) {
-      debug("Parsing broadcast");
+      logger.debug("Parsing broadcast");
       final offset = input.offset();
       final name = parseBetween('"', '"', parseStringValue);
       if (name == null) {
@@ -535,7 +540,7 @@ class Parser with Logger {
       return DBroadcast(name: name);
     }
     if (_checkStr("costume ")) {
-      debug("Parsing costume");
+      logger.debug("Parsing costume");
       final offset = input.offset();
       final assetName = parseBetween('"', '"', parseStringValue);
       if (assetName == null) {
@@ -557,7 +562,7 @@ class Parser with Logger {
       return DAsset(assetName: assetName);
     }
     if (_checkStr("sound ")) {
-      debug("Parsing sound");
+      logger.debug("Parsing sound");
       final offset = input.offset();
       final assetName = parseBetween('"', '"', parseStringValue);
       if (assetName == null) {
@@ -579,16 +584,16 @@ class Parser with Logger {
       return DAsset.sound(assetName: assetName);
     }
     if (_checkStr("block ")) {
-      debug(
+      logger.debug(
           "\n\n\nParsing block at pos ${input.offset()}\n===============================\n");
       whitespace();
       final block = parseBlock();
       if (block != null) {
-        debug("Parsed block\n\n\n");
+        logger.debug("Parsed block\n\n\n");
         associateBlockWithComment("${block.hashCode}");
         return DBlock(block: block);
       }
-      debug("No block parsed :-(");
+      logger.debug("No block parsed :-(");
     }
     return null;
   }
@@ -610,7 +615,7 @@ class Parser with Logger {
       if (decl != null) {
         decls.add(decl);
         if (!newlines()) {
-          debug("No newlines '${input.apply(1)}'");
+          logger.debug("No newlines '${input.apply(1)}'");
           break;
         }
       }

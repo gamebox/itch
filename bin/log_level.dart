@@ -15,9 +15,23 @@ enum _LogLevel {
   }
 }
 
-mixin class Logger {
+_LogLevel _logLevelfromString(String level) => switch (level) {
+      "debug" => _LogLevel.debug,
+      "info" => _LogLevel.info,
+      "warn" => _LogLevel.warn,
+      "error" => _LogLevel.error,
+      "fatal" => _LogLevel.fatal,
+      _ => _LogLevel.quiet,
+    };
+
+class LoggerImpl {
   _LogLevel _logLevel = _LogLevel.quiet;
   IOSink? sink;
+
+  String get logLevel => _logLevel.name;
+
+  LoggerImpl({required String level, this.sink})
+      : _logLevel = _logLevelfromString(level);
 
   void setLogLevel(String level) {
     switch (level) {
@@ -37,6 +51,7 @@ mixin class Logger {
         _logLevel = _LogLevel.fatal;
         break;
       default:
+        print("Did not find log level: '$level'");
         _logLevel = _LogLevel.quiet;
         break;
     }

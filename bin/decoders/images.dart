@@ -64,8 +64,8 @@ ImageInfo? _decodePng(List<int> imageData) {
         .toList());
     final md5 = crypto.md5.convert(imageData).toString();
     return ImageInfo(
-      centerX: (height / 2).ceil(),
-      centerY: (width / 2).ceil(),
+      centerX: (width / 2).ceil(),
+      centerY: (height / 2).ceil(),
       md5: md5,
       ext: 'png',
     );
@@ -89,8 +89,8 @@ ImageInfo? _decodeSvg(List<int> imageData) {
           0;
   final md5 = crypto.md5.convert(imageData).toString();
   return ImageInfo(
-    centerX: (height / 2).ceil(),
-    centerY: (width / 2).ceil(),
+    centerX: (width / 2).ceil(),
+    centerY: (height / 2).ceil(),
     md5: md5,
     ext: 'svg',
   );

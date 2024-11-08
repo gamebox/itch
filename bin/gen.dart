@@ -96,13 +96,14 @@ class _TargetSettings {
   }
 }
 
-class Generator with Logger {
+class Generator {
   final List<String> errors = [];
   final List<({String from, String to})> assetMoves = [];
   // The key is opcode, the value is the number of times used
   final Map<String, int> blockIds = {};
   String projectPath = '';
   String target = 'stage';
+  final LoggerImpl logger;
 
   final Map<String, List<String>> targetVars = {
     "stage": [],
@@ -120,7 +121,7 @@ class Generator with Logger {
     "stage": [],
   };
 
-  Generator();
+  Generator({required this.logger});
 
   String listId(String name) {
     if ((targetLists[target] != null && targetLists[target]!.contains(name)) ||
@@ -414,7 +415,7 @@ class Generator with Logger {
 
     for (final seg in block.segments) {
       if (slotsCovered - 1 > slots.length) {
-        debug(
+        logger.debug(
             "We are trying to cover $slotsCovered slots, but only have ${slots.length}.\nslots: $slots\nsegments: ${block.segments}");
         break;
       }
@@ -428,7 +429,8 @@ class Generator with Logger {
                   break;
                 }
                 if (!validValueForMenu(info.$1, name, value)) {
-                  debug("ERROR: '$value' is not a valid menu option for $name");
+                  logger.debug(
+                      "ERROR: '$value' is not a valid menu option for $name");
                 }
                 generateMenu(blocks, name, value, info, owningBlockId);
                 inputs[name] = scratch.IdInput(
@@ -444,19 +446,19 @@ class Generator with Logger {
               }
               break;
             case std.FieldDef _:
-              debug(
+              logger.debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.VarDef _:
-              debug(
+              logger.debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.VarGetterDef _:
-              debug(
+              logger.debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
             case std.MouthDef _:
-              debug(
+              logger.debug(
                   "VALUE Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId\n");
               break;
           }
@@ -471,7 +473,8 @@ class Generator with Logger {
                 }
                 String? actualValue = valueForMenuLabel(info.$1, name, value);
                 if (actualValue == null) {
-                  debug("ERROR: '$value' is not a valid menu option for $name");
+                  logger.debug(
+                      "ERROR: '$value' is not a valid menu option for $name");
                 }
                 generateMenu(
                     blocks, name, actualValue ?? value, info, owningBlockId);
@@ -510,11 +513,11 @@ class Generator with Logger {
                           : broadcastId(value));
               break;
             case std.VarGetterDef _:
-              debug(
+              logger.debug(
                   "FIELD Segment is $seg\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.MouthDef _:
-              debug(
+              logger.debug(
                   "FIELD Segment is $seg\t\tSlot is ${slots[slotsCovered].name}");
               break;
           }
@@ -531,15 +534,15 @@ class Generator with Logger {
                     scratch.IdInput(id: id, kind: scratch.InputKind.shadow);
                 break;
               case std.FieldDef _:
-                debug(
+                logger.debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.VarDef _:
-                debug(
+                logger.debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\tSlot is ${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.VarGetterDef _:
-                debug(
+                logger.debug(
                     "REPORTER Segment is $seg\t\t${slots[slotsCovered]}\t\t${slots[slotsCovered].name}\t\t$owningBlockId");
                 break;
               case std.MouthDef _:
@@ -579,7 +582,7 @@ class Generator with Logger {
                     shadowValue: scratch.ReporterBlock.string(""));
                 break;
               default:
-                debug("Reporter going into non-input");
+                logger.debug("Reporter going into non-input");
                 break;
             }
           }
@@ -609,19 +612,19 @@ class Generator with Logger {
           }
           switch (slots[slotsCovered]) {
             case std.InputDef(name: String _):
-              debug(
+              logger.debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.FieldDef _:
-              debug(
+              logger.debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.VarDef _:
-              debug(
+              logger.debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.VarGetterDef _:
-              debug(
+              logger.debug(
                   "MOUTH Segment is $seg {TYPE: ${seg.runtimeType}}\t\tSlot is ${slots[slotsCovered].name}");
               break;
             case std.MouthDef(name: String name):
@@ -664,7 +667,7 @@ class Generator with Logger {
     }
     int total = slotsCovered + words;
     if (total != block.segments.length && !hat) {
-      debug("Only processed $total segments: $owningBlockId");
+      logger.debug("Only processed $total segments: $owningBlockId");
     }
     return (inputs: inputs, fields: fields, blocks: blocks, next: next);
   }
@@ -679,7 +682,7 @@ class Generator with Logger {
   (std.ScratchBlockDef, String)? menuInstanceInfo(String menu) {
     final def = std.menus["[$menu]"];
     if (def == null) {
-      debug("NO menu def for: $menu");
+      logger.debug("NO menu def for: $menu");
       return null;
     }
     final curr = blockIds[def.opcode];
@@ -696,7 +699,7 @@ class Generator with Logger {
     final op = block.op();
     final def = std.blockDefs[op];
     if (def == null) {
-      debug("NO block def for: $op");
+      logger.debug("NO block def for: $op");
       return null;
     }
     final curr = blockIds[def.opcode];
@@ -766,7 +769,7 @@ class Generator with Logger {
       final uri = "$projectPath/assets/sounds/${decl.assetName}";
       final soundInfo = decoders.decodeSound(uri);
       if (soundInfo == null) {
-        debug("Could not find a sound for '${decl.assetName}'.");
+        logger.debug("Could not find a sound for '${decl.assetName}'.");
         return null;
       }
       assetMoves.add((
@@ -786,7 +789,7 @@ class Generator with Logger {
     final uri = "$projectPath/assets/images/${decl.assetName}";
     final imageInfo = decoders.decodeImage(uri);
     if (imageInfo == null) {
-      debug("Could not find an image for '${decl.assetName}'.");
+      logger.debug("Could not find an image for '${decl.assetName}'.");
       return null;
     }
     assetMoves.add((
@@ -798,9 +801,9 @@ class Generator with Logger {
       name: decl.assetName,
       md5ext: "${imageInfo.md5}.${imageInfo.ext}",
       dataFormat: imageInfo.ext,
-      rotationCenterX: imageInfo.centerX,
-      rotationCenterY: imageInfo.centerY,
-      bitmapResolution: 1,
+      rotationCenterX: target == 'stage' ? 240 : imageInfo.centerX,
+      rotationCenterY: target == 'stage' ? 180 : imageInfo.centerY,
+      bitmapResolution: imageInfo.ext == 'svg' ? null : 1,
     );
   }
 
@@ -876,7 +879,8 @@ class Generator with Logger {
             addListToTarget(d.name);
             lists[listId(d.name)] = l;
           } else {
-            debug("Generation error: could not generate list variable for $d");
+            logger.debug(
+                "Generation error: could not generate list variable for $d");
             return null;
           }
           break;
@@ -886,7 +890,8 @@ class Generator with Logger {
             addVarToTarget(d.name);
             vars[varId(d.name)] = v;
           } else {
-            debug("Generation error: could not generate variable for $d");
+            logger
+                .error("Generation error: could not generate variable for $d");
             return null;
           }
           break;
@@ -900,7 +905,7 @@ class Generator with Logger {
         case ast.DAsset d:
           final asset = genAsset(d);
           if (asset == null) {
-            debug("Generation error: could not generate costume for $d");
+            logger.debug("Generation error: could not generate costume for $d");
             return null;
           } else if (d.isSound) {
             sounds.add(asset);
@@ -917,6 +922,7 @@ class Generator with Logger {
     for (final b in blockDecls) {
       final instanceInfo = blockInstanceInfo(b);
       if (instanceInfo == null) {
+        logger.error("Could not find instance information for: $b");
         return null;
       }
       generateBlock(blocks, b, instanceInfo, topLevel: true);
@@ -978,10 +984,15 @@ class Generator with Logger {
   scratch.Project? generate(Map<String, ast.ItchFile> files, String path) {
     projectPath = path;
     final targets = <scratch.Target>[];
+    logger.info("Generating ${files.entries.length} files...");
     for (final entry in files.entries) {
+      logger.info("Generating ${entry.key}");
       final target = generateTarget(entry.value);
       if (target != null) {
         targets.add(target);
+      } else {
+        logger.error("Could not generate target");
+        return null;
       }
     }
     return scratch.Project(

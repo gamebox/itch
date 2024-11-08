@@ -6,6 +6,7 @@ import 'a_command.dart';
 import 'compare.dart';
 import 'compile.dart';
 import 'init.dart';
+import 'log_level.dart';
 
 const String cHelp = 'help';
 const String cVersion = 'version';
@@ -15,18 +16,18 @@ const String cInit = 'init';
 
 ArgParser _buildParser() {
   return ArgParser()
+    ..addOption(
+      'logLevel',
+      abbr: 'l',
+      mandatory: false,
+      help: 'One of: debug, info, warn, error, fatal, quiet',
+      defaultsTo: "",
+    )
     ..addCommand(cHelp, ArgParser(allowTrailingOptions: true))
     ..addCommand(cVersion, ArgParser(allowTrailingOptions: false))
     ..addCommand(
       cCompile,
       ArgParser(allowTrailingOptions: true)
-        ..addOption(
-          'logLevel',
-          abbr: 'l',
-          mandatory: false,
-          help: 'One of: debug, info, warn, error, fatal, quiet',
-          defaultsTo: "",
-        )
         ..addOption(
           'dir',
           abbr: 'd',
@@ -69,7 +70,7 @@ class HelpCommand implements ACommand {
   HelpCommand({required this.parser, required this.commandUsage});
 
   @override
-  Future<bool> exec() async {
+  Future<bool> exec(LoggerImpl _) async {
     print('Usage: itch <command> [flags] [arguments]');
     print("Commands");
     print("========");
@@ -97,7 +98,7 @@ class VersionCommand implements ACommand {
   VersionCommand({required this.version});
 
   @override
-  Future<bool> exec() async {
+  Future<bool> exec(LoggerImpl _) async {
     print("Itch version $version");
     return true;
   }
@@ -110,26 +111,34 @@ Map<String, String> commandUsage = {
   cInit: "Start a new project in a new directory with a given name",
 };
 
-ACommand getCommand(Iterable<String> args, String currentVersion) {
+LoggerImpl getLogger(ArgResults results) {
+  return LoggerImpl(level: results.option("logLevel") ?? "");
+}
+
+(ACommand, LoggerImpl) getCommand(
+    Iterable<String> args, String currentVersion) {
   final p = _buildParser();
   final result = p.parse(args);
+  final logger = getLogger(result);
   switch (result.command?.name) {
     case cVersion:
-      return VersionCommand(version: currentVersion);
+      return (VersionCommand(version: currentVersion), logger);
     case cCompile:
-      final logLevel = result.command!.option("logLevel");
-      return CompileCommand(
+      final c = CompileCommand(
         dir: result.command!.option('dir') ?? Directory('.').path,
-        logLevel: logLevel ?? "",
       );
+      return (c, logger);
     case cCompare:
-      return CompareCommand(dir: result.command!.option('dir')!);
+      return (CompareCommand(dir: result.command!.option('dir')!), logger);
     case cInit:
-      return InitCommand(
-        projectName: result.command!.option('name')!,
-        dir: result.command!.option('dir')!,
+      return (
+        InitCommand(
+          projectName: result.command!.option('name')!,
+          dir: result.command!.option('dir')!,
+        ),
+        logger
       );
     default:
-      return HelpCommand(parser: p, commandUsage: commandUsage);
+      return (HelpCommand(parser: p, commandUsage: commandUsage), logger);
   }
 }

@@ -4,13 +4,12 @@ import './a_command.dart';
 import './ansi.dart';
 import './log_level.dart';
 
-class InitCommand extends Logger implements ACommand {
+class InitCommand implements ACommand {
   final String dir;
   final String projectName;
+  late LoggerImpl logger;
 
-  InitCommand({required this.dir, required this.projectName}) {
-    super.setLogLevel("info");
-  }
+  InitCommand({required this.dir, required this.projectName});
 
   Future<Directory?> createDir(String path) async {
     final directory = Directory(path);
@@ -21,10 +20,10 @@ class InitCommand extends Logger implements ACommand {
     }
     try {
       final d = await directory.create();
-      info("🗂️\tCreated ${d.path}");
+      logger.info("🗂️\tCreated ${d.path}");
       return d;
     } on FileSystemException catch (e) {
-      error("Failed to create directory: ${e.message}");
+      logger.error("Failed to create directory: ${e.message}");
       return null;
     }
   }
@@ -34,20 +33,21 @@ class InitCommand extends Logger implements ACommand {
     try {
       final f = await file.create(exclusive: true);
       await f.writeAsString(content);
-      info("📄\tCreated ${f.path}");
+      logger.info("📄\tCreated ${f.path}");
       return f;
     } on PathExistsException catch (e) {
-      error("Failed to create file $path: ${e.message}");
+      logger.error("Failed to create file $path: ${e.message}");
     } on FileSystemException catch (e) {
-      error("Failed to create file $path: ${e.message}");
+      logger.error("Failed to create file $path: ${e.message}");
     } on Exception catch (_) {
-      error("Failed to create file $path");
+      logger.error("Failed to create file $path");
     }
     return null;
   }
 
   @override
-  Future<bool> exec() async {
+  Future<bool> exec(LoggerImpl log) async {
+    logger = log;
     // Create project.itch file
     final projectDir = await createDir(dir);
     if (projectDir == null) {
@@ -92,7 +92,7 @@ class InitCommand extends Logger implements ACommand {
     if (projectFile == null) {
       return false;
     }
-    info(
+    logger.info(
       successPen(
         "🚀\tProject created.\nTo start run:\n\ncd $dir\n\nAnd then open the project in your editor of choice.",
       ),

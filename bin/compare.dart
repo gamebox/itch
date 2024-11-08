@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'a_command.dart';
+import 'log_level.dart';
 
 bool compareList(dynamic fixture, dynamic built,
     bool Function(dynamic, dynamic) elementCompare) {
@@ -186,7 +187,7 @@ class CompareCommand implements ACommand {
   CompareCommand({required this.dir});
 
   @override
-  Future<bool> exec() {
+  Future<bool> exec(LoggerImpl _) {
     return runCompare(dir);
   }
 }

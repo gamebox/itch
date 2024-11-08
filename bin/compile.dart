@@ -32,16 +32,15 @@ extension WhitespaceChecked on String {
   }
 }
 
-class CompileCommand extends Logger implements ACommand {
+class CompileCommand implements ACommand {
   String dir;
-  String logLevel;
+  late LoggerImpl _logger;
 
-  CompileCommand({required this.dir, required this.logLevel}) {
-    super.setLogLevel('info');
-  }
+  CompileCommand({required this.dir});
 
   @override
-  Future<bool> exec() async {
+  Future<bool> exec(LoggerImpl logger) async {
+    _logger = logger;
     try {
       runCompile(dir);
       return true;
@@ -59,8 +58,8 @@ class CompileCommand extends Logger implements ACommand {
     print("Compiling $filepath");
     final file = File(filepath);
     final contents = await file.readAsString();
-    final parser = Parser(contents: contents, fileName: filepath);
-    parser.setLogLevel(logLevel);
+    final parser =
+        Parser(contents: contents, fileName: filepath, logger: _logger);
     final parseResult = parser.parse();
     final parseErrors = parser.errors();
     if (parseResult == null || parseErrors.isNotEmpty) {
@@ -70,7 +69,6 @@ class CompileCommand extends Logger implements ACommand {
       }
       return null;
     } else {
-      print("Success");
       return parseResult;
     }
   }
@@ -78,7 +76,7 @@ class CompileCommand extends Logger implements ACommand {
   Future<String?> getProjectName() async {
     final projectFile = File.fromUri(Uri.file("$dir/project.itch"));
     if (!await projectFile.exists()) {
-      warn("No project file found at: ${projectFile.path}");
+      _logger.warn("No project file found at: ${projectFile.path}");
       return null;
     }
     final contents = await projectFile.readAsString();
@@ -87,7 +85,7 @@ class CompileCommand extends Logger implements ACommand {
         final matches =
             RegExp(r"project ([a-zA-Z0-9'_-\s]+).").matchAsPrefix(line);
         if (matches == null) {
-          error("""
+          _logger.error("""
 Invalid project file:
 
 Expected something like
@@ -107,7 +105,7 @@ $line"""
       if (line.startsWith("#") || line.isWhitespace()) {
         continue;
       }
-      error("""
+      _logger.error("""
 Unexpected content in project file:
 
 Got
@@ -117,12 +115,13 @@ $line
 But I don't know what that is...."""
           .trimLeft());
     }
-    info("Never found a valid project file or name, defaulting to 'Project'");
+    _logger.info(
+        "Never found a valid project file or name, defaulting to 'Project'");
     return null;
   }
 
   Future<void> runCompile(String path) async {
-    await loadBlockDefs();
+    await loadBlockDefs(_logger);
     final entries = await Directory(path)
         .list(recursive: true)
         .where(
@@ -145,9 +144,9 @@ But I don't know what that is...."""
     }
     if (error) {
       print("Could not compile project due to above errors.");
+      return;
     }
-    final g = gen.Generator();
-    g.setLogLevel(logLevel);
+    final g = gen.Generator(logger: _logger);
     final project = g.generate(files, path);
     if (project == null) {
       print("ERROR");
@@ -171,9 +170,10 @@ But I don't know what that is...."""
     final projectName = await getProjectName() ?? 'Project';
     // clean old resources
     print("Cleaning up");
+    final projectFilename = fileEncode(projectName);
     try {
       await File.fromUri(Uri.file("out.zip")).delete();
-      await File.fromUri(Uri.file("$projectName.sb3")).delete();
+      await File.fromUri(Uri.file("$projectFilename.sb3")).delete();
     } on PathNotFoundException catch (_) {
       // Not handling
     }
@@ -186,13 +186,17 @@ But I don't know what that is...."""
       return;
     }
     // move zip to sb3
-    final p2 = await Process.run("mv", ["out.zip", "$projectName.sb3"]);
+    final p2 = await Process.run("mv", ["out.zip", "$projectFilename.sb3"]);
     if (p2.exitCode != 0) {
       print("Could not create project file");
       print(p.stdout);
       return;
     }
-    print("Project file created: $projectName.sb3");
+    print("Project file created: $projectFilename.sb3");
     return;
   }
+}
+
+String fileEncode(String projectName) {
+  return projectName.toLowerCase().replaceAll(RegExp(r"\W"), "_");
 }

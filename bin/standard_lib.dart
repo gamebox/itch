@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'data/data.dart';
+import 'log_level.dart';
 
 class ScratchBlockDef {
   final String opcode;
@@ -241,17 +241,13 @@ void printDefs() {
   }
 }
 
-Future<void> loadBlockDefs() async {
-  if (blockDefs.isNotEmpty) {
-    print("Block defs already loaded");
-    return;
-  }
+Future<void> loadBlockDefs(LoggerImpl logger) async {
+  assert(blockDefs.isEmpty, "Blocks defs already loaded");
   if (blockData case List<dynamic> json) {
-    print("Loading ${json.length} block definitions");
     for (final b in json) {
       final block = ScratchBlockDef.fromJson(b);
       if (blockDefs.containsKey(block.identifier)) {
-        print(
+        logger.warn(
             "Trying to insert:\n\n'${jsonEncode(b)}'\n\nBut the identifier '${block.identifier}' already exists");
       }
       if (block.isMenu()) {
