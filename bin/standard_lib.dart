@@ -55,14 +55,19 @@ class ScratchBlockDef {
         srcLabel: srcLabel,
       );
     }
-    throw Error();
+    throw Exception("Invalid format for a block: ${jsonEncode(json)}");
   }
 
   bool isMenu() {
-    if (srcLabel == "()" && args.length == 1) {
-      return true;
+    if (args.isEmpty) {
+      return false;
     }
-    return false;
+    switch (args[0]) {
+      case FieldDef d:
+        return d.options.isNotEmpty;
+      default:
+        return false;
+    }
   }
 
   bool validMenuOption(String value) {
@@ -95,6 +100,21 @@ class ScratchBlockDef {
         return null;
       }
       return opt.value;
+    }
+    return null;
+  }
+
+  String? menuLabelForValue(String value) {
+    if (!isMenu()) {
+      return null;
+    }
+    if (args[0] case FieldDef(options: final options)) {
+      for (final opt in options) {
+        if (opt.value == value) {
+          return opt.label;
+        }
+      }
+      return null;
     }
     return null;
   }
@@ -211,6 +231,23 @@ class DropdownOption {
 class FieldDef extends SlotDef {
   final List<DropdownOption> options;
   FieldDef({required super.name, required this.options});
+  String? menuValueForLabel(String label) {
+    for (final opt in options) {
+      if (opt.label == label) {
+        return opt.value;
+      }
+    }
+    return null;
+  }
+
+  String? menuLabelForValue(String value) {
+    for (final opt in options) {
+      if (opt.value == value) {
+        return opt.label;
+      }
+    }
+    return null;
+  }
 }
 
 class MouthDef extends SlotDef {
@@ -226,6 +263,7 @@ class VarGetterDef extends SlotDef {
 }
 
 final Map<String, ScratchBlockDef> blockDefs = {};
+final Map<String, ScratchBlockDef> blockDefsByOpcode = {};
 
 void printDefs() {
   int long = 0;
@@ -241,7 +279,7 @@ void printDefs() {
   }
 }
 
-Future<void> loadBlockDefs(LoggerImpl logger) async {
+void loadBlockDefs(LoggerImpl logger) {
   assert(blockDefs.isEmpty, "Blocks defs already loaded");
   if (blockData case List<dynamic> json) {
     for (final b in json) {
@@ -252,9 +290,9 @@ Future<void> loadBlockDefs(LoggerImpl logger) async {
       }
       if (block.isMenu()) {
         menus[block.identifier] = block;
-        continue;
       }
       blockDefs[block.identifier] = block;
+      blockDefsByOpcode[block.opcode] = block;
     }
   } else {
     throw Error();

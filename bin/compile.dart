@@ -121,7 +121,7 @@ But I don't know what that is...."""
   }
 
   Future<void> runCompile(String path) async {
-    await loadBlockDefs(_logger);
+    loadBlockDefs(_logger);
     final entries = await Directory(path)
         .list(recursive: true)
         .where(

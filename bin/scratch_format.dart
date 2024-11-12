@@ -120,15 +120,11 @@ sealed class Target {
         name: json["name"] as String,
         variables: (json["variables"] as Map<String, dynamic>)
             .map((key, v) => MapEntry(key, Variable.fromJson(v))),
-        currentCostume: json["currentCostume"] as int,
         costumes: (json["costumes"] as List<dynamic>)
             .map((s) => Asset.fromJson(s))
             .toList(),
-        layerOrder: json["layerOrder"] as int,
-        volume: json["volume"] as int,
         broadcasts:
             (json["broadcasts"] as Map<String, dynamic>).cast<String, String>(),
-        tempo: json["tempo"] as int,
         lists: (json["lists"] as Map<String, dynamic>)
             .map((key, v) => MapEntry(key, ListVar.fromJson(v))),
         blocks: (json["blocks"] as Map<String, dynamic>)
@@ -138,6 +134,10 @@ sealed class Target {
         sounds: (json["sounds"] as List<dynamic>)
             .map((s) => Asset.fromJson(s))
             .toList(),
+        tempo: json["tempo"] as int,
+        currentCostume: json["currentCostume"] as int,
+        layerOrder: json["layerOrder"] as int,
+        volume: json["volume"] as int,
         videoState: VideoState.fromJson(json["videoState"] as String),
         videoTransparency: json["videoTransparency"] as int,
         textToSpeechLanguage: json["textToSpeechLanguage"] as String?,
@@ -165,10 +165,10 @@ sealed class Target {
             .map((s) => Asset.fromJson(s))
             .toList(),
         visible: json["visible"] as bool,
-        x: json["x"] as int,
-        y: json["y"] as int,
-        size: json["size"] as int,
-        direction: json["direction"] as int,
+        x: (json["x"] as num).toInt(),
+        y: (json["y"] as num).toInt(),
+        size: (json["size"] as num).toInt(),
+        direction: (json["direction"] as num).toInt(),
         draggable: json["draggable"] as bool,
         rotationStyle: RotationStyle.fromJson(json["rotationStyle"] as String),
       );
@@ -398,6 +398,11 @@ sealed class Block {
   int? getY() => switch (this) {
         ReporterBlock b => b.y,
         BasicBlock b => b.y,
+      };
+
+  bool get isTopLevel => switch (this) {
+        ReporterBlock _ => false,
+        BasicBlock b => b.topLevel,
       };
 
   factory Block.fromJson(dynamic json) => switch (json) {
@@ -697,6 +702,22 @@ sealed class Asset {
         {
           "assetId": String assetId,
           "name": String name,
+          "dataFormat": String dataFormat,
+          "rotationCenterX": int rotationCenterX,
+          "rotationCenterY": int rotationCenterY,
+        } =>
+          Costume(
+            assetId: assetId,
+            name: name,
+            md5ext: "$assetId.$dataFormat",
+            dataFormat: dataFormat,
+            bitmapResolution: json["bitmapResolution"] as int?,
+            rotationCenterX: rotationCenterX,
+            rotationCenterY: rotationCenterY,
+          ),
+        {
+          "assetId": String assetId,
+          "name": String name,
           "md5ext": String md5ext,
           "dataFormat": String dataFormat,
           "rate": int rate,
@@ -913,14 +934,20 @@ enum InputKind {
 sealed class Input {
   InputKind kind;
   ReporterBlock? shadowValue;
+  String? shadowId;
 
-  Input({required this.kind, required this.shadowValue});
+  Input({required this.kind, required this.shadowValue, this.shadowId});
 
   factory Input.fromJson(dynamic json) => switch (json) {
         [3, String id, List block] => IdInput(
             kind: InputKind.values[3],
             id: id,
             shadowValue: ReporterBlock.fromJson(block),
+          ),
+        [3, String id, String shadowId] => IdInput(
+            kind: InputKind.values[3],
+            id: id,
+            shadowId: shadowId,
           ),
         [3, List block, List shadowBlock] => BlockInput(
             kind: InputKind.values[3],
@@ -962,6 +989,7 @@ class IdInput extends Input {
   IdInput({
     required super.kind,
     super.shadowValue,
+    super.shadowId,
     required this.id,
   });
 

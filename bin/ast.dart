@@ -23,7 +23,7 @@ class ItchFile {
       SpriteFile(name: String name) => "sprite $name.",
     };
 
-    return "$fileDesc\n${decls.map((d) => d.toString()).join('.\n')}";
+    return "$fileDesc\n${decls.map((d) => "$d").join('.\n')}";
   }
 }
 
@@ -85,14 +85,19 @@ class DAsset extends Decl {
   DAsset.sound({required this.assetName}) : isSound = true;
 }
 
+Pattern numberRe = RegExp(r"-?[0-9]{1,}(\.[0-9]{1,})?");
+bool isNumeric(String value) => numberRe.matchAsPrefix(value) != null;
+
 sealed class Segment {
   @override
   String toString() => switch (this) {
         SWord(word: String word) => word,
-        SValue(value: String value) => "($value)",
+        SValue(value: String value) when isNumeric(value) => value,
+        SValue(value: String value) => '"$value"',
         SField(value: String value) => "[$value]",
         SReporter(block: Block block) => "($block)",
-        SCMouth(blocks: List<Block> blocks) => "{\n\t${blocks.join("\n\t")}\n}",
+        SCMouth(blocks: List<Block> blocks) =>
+          "{\n${blocks.join(".\n").split("\n").map((l) => "\t$l").join("\n")}.\n}",
       };
   @override
   get hashCode => switch (this) {

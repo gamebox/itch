@@ -262,7 +262,6 @@ class Parser {
     return anyUntil((c) => !numberChars.contains(c), false);
   }
 
-  Pattern numberRe = RegExp(r"-?[0-9]{1,}(\.[0-9]{1,})?");
   String numberChars = "0123456789";
   Runes numberStartRunes = "0123456789-".runes;
 

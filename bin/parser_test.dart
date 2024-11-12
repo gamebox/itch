@@ -1,12 +1,18 @@
+import 'dart:io';
+
 import "package:test/test.dart";
+
 import "./parser.dart";
 import "./ast.dart" as ast;
+import 'log_level.dart';
 
 void main() {
+  final testLogger = LoggerImpl(level: "error", sink: stdout);
   group("Parser", () {
     group("parseStaticValue", () {
       test("Static string value", () {
         final p = Parser(
+          logger: testLogger,
           contents: '"Hello world!".',
           fileName: "test.itch",
         );
@@ -15,6 +21,7 @@ void main() {
       });
       test("Static integer value", () {
         final p = Parser(
+          logger: testLogger,
           contents: '23',
           fileName: "test.itch",
         );
@@ -23,6 +30,7 @@ void main() {
       });
       test("Static decimal value", () {
         final p = Parser(
+          logger: testLogger,
           contents: '23.14',
           fileName: "test.itch",
         );
@@ -31,6 +39,7 @@ void main() {
       });
       test("Static signed integer value", () {
         final p = Parser(
+          logger: testLogger,
           contents: '-23',
           fileName: "test.itch",
         );
@@ -39,6 +48,7 @@ void main() {
       });
       test("Static signed decimal value", () {
         final p = Parser(
+          logger: testLogger,
           contents: '-23.14',
           fileName: "test.itch",
         );
@@ -74,6 +84,7 @@ void main() {
       for (final c in testCases) {
         test(c.name, () {
           final p = Parser(
+            logger: testLogger,
             contents: c.contents,
             fileName: "${c.name}_test.itch",
           );
@@ -107,8 +118,10 @@ void main() {
         ];
         for (final c in setTestCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             final decl = p.parseDecl();
             if (decl case ast.DSet s) {
               expect(s.name, c.decl.name);
@@ -136,8 +149,10 @@ void main() {
         ];
         for (final c in setTestCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             final decl = p.parseDecl();
             if (decl case ast.DVar s) {
               expect(s.name, c.decl.name);
@@ -182,8 +197,10 @@ void main() {
         ];
         for (final c in setTestCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             final decl = p.parseDecl();
             if (decl case ast.DList s) {
               expect(s.name, c.decl.name);
@@ -215,8 +232,10 @@ void main() {
         ];
         for (final c in testCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             final decl = p.parseDecl();
             if (decl case ast.DAsset d) {
               expect(d.assetName, c.costumeName);
@@ -300,8 +319,10 @@ void main() {
         ];
         for (final c in testCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             final decl = p.parseDecl();
             if (decl case ast.DBlock(block: ast.Block block)) {
               expect(block.segments.length, c.block.segments.length,
@@ -325,8 +346,10 @@ void main() {
         ];
         for (final c in testCases) {
           test(c.name, () {
-            final p =
-                Parser(contents: c.contents, fileName: "${c.name}_test.itch");
+            final p = Parser(
+                logger: testLogger,
+                contents: c.contents,
+                fileName: "${c.name}_test.itch");
             p.parseDecl();
             expect(p.freeComment, c.comment);
           });
